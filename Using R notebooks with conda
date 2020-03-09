@@ -1,0 +1,32 @@
+
+USE R WITH JUPYTER-NOTEBOOK IN BROWSER
+
+1. launch anaconda-navigator
+2. select 'home'
+        switch to python3
+3. select 'Environments'
+        'EnvDataSci'
+   if envrionment does not exist, then create it with R
+4. Launch a terminal from the environments window, after selecting (activating) 
+the appropriate environment. Then launch Jupyter from the command line.
+
+https://docs.anaconda.com/anaconda/navigator/tutorials/r-lang/
+
+USE R WITH JUPYTER-NOTEBOOK IN BROWSER
+
+To convert ipynb to Rmd, then download as md from jupyter-notebook in browser.
+
+1. Rename file as .Rmd 
+
+2. Then for each R cell convert
+
+'''R
+
+'''
+
+to 
+
+'''{R}
+
+'''
+

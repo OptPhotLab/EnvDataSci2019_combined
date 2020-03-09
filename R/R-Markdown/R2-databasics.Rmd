@@ -1,0 +1,358 @@
+---
+title: "R-session-databasics"
+author: "Chao, Jon,Yann"
+date: "5 November 2018"
+output: pdf_document
+---
+
+# Introduction
+
+In this session we will outline a basic environmental data work-flow. Our goal 
+is to highlight common data tasks, and typical ways to solve
+them in R. 
+
+
+When working with environmental data, there are usually a few steps
+that come up each time. These are:
+  
+* **reading**. Typically data is read from text files, but can also come from the
+internet or in other format 
+* **processing**. The data we read is usually a little 
+untidy , for example we may need to subset to correct dates.
+* **plotting**. Plotting data is always worth doing as early as
+possible. Use histograms or simple line plots as your first steps
+in visualising data.  
+
+To do these efficiently in R is mainly about learning which
+functions to use, and how to apply these functions. 
+
+In this notebook we will work through each step in turn with 
+example data. We will once again work with data downloaded from
+SMARTSMEAR, in this case we will use flux data measured using the
+eddy co-variance technique at SMEARII research station. We will use Temperature 
+which is measured at 16.8m Height, Gross Primary Production (GPP) which 
+is derived from measurements of CO2 exchange, and Evapotranspiration (ET) 
+which is derived from measurements of H2O exchange. 
+
+Before we start there is one other thing we should mention.In this
+session we will assume that terms like *function*, *argument* are
+familiar to you. If they are not then go back to
+R1-introduction.ipynb, and check the definition. If you cannot find
+the definition in there then complain to your instructors to update
+the intro! Alright, let's get started.
+
+ 
+#1. Reading
+
+Our first task is to read in our GPP, ET and temperature data. Reading data 
+takes data from storage (typically your computer's hard disk) and places it
+somewhere (in RAM) that is can be operated on by R.  We have already
+downloaded our data as two seperate text files from SMARTSMEAR, and
+stored these files in the */data* directory (folder) on github:
+https://github.com/OptPhotLab/EnvDataSciNotebooks/tree/master/data
+(You can inspect the data files by clicking the github link, but opening
+the individual files on github could slow your computer down!)
+
+There are a few different functions for reading data in R, these include:
+
+* read.csv
+* read.table
+* read.delim 
+* read.csv2 
+
+We can use **help** to inspect these functions, see what arguments they
+have, and how to set these arguments so that you can read your
+data/file in a proper way. 
+
+```{r}
+#help(read.csv)
+```
+
+Let's use *read.csv* to read in our GPP dataset. 
+
+```{r}
+gpp<-read.csv('../data/gppsmeardata_20160101120000.csv',header = T,sep = ',',dec='.')
+```
+
+The double dots **..** in the path tell R to go up a level in the directory (folder) hierarchy. The full path (location) of the ET data is:
+
+*../data/ET smeardata_20160101120000.csv*
+
+go ahead and read the ET data:
+
+```{r}
+# name the output data ET
+
+```
+
+It is as simple as that! 
+
+We have read our data into the memory, the next step is
+processing. But just before we move on we can use the *head* function to inspect 
+the first few lines of our data object:
+
+```{r}
+
+```
+
+can you also remember how to check the type of our objects?
+
+```{r}
+```
+
+#2. Processing
+
+Before we can make any graphs or perform any stats we usually have to tidy our data
+and there are a bunch of techniques in R that can help out with this. Let's 
+check out a few of them that make life easier.
+
+##2.1. Combining 
+
+We read in *two* different data files which have same first six columns. We can make life easier by combining these into a single dataframe using *merge()* function. 
+
+Use the *by* argument to set which variables are shared.
+
+```{r}
+gpp.ET<-merge(gpp,ET,by=c("Year","Month","Day","Hour","Minute", "Second"),all = T)
+```
+
+Use *head* to check the combination worked:
+
+```{r}
+
+```
+
+Now, let's read the third file: temperature into R.
+
+*'../data/T168_20160101120000.csv'* 
+
+```{r}
+# name the output data temp
+
+```
+
+we will combine temperature (temp) data with gpp and ET. 
+
+Try yourself here and name the combined file as *merge.all*:
+
+```{r}
+
+```
+
+Note, merge() can be only used to combine two dataframe into one file. Can we combine multiple files into one using one function at one time? The answer is Yes. 
+
+*Reduce()* function is one of the solutions.
+
+```{r}
+#Note x or y is index, they can also be anything else, such as m and n.
+reduce.all<-
+  Reduce(function(x,y) merge(x,y,by=c("Year","Month","Day",
+                                      "Hour","Minute","Second"),all = T),
+         list(gpp,ET,temp))
+```
+
+check the str of *reduce.all* that should be exactly same with *merge.all* 
+
+```{r}
+
+```
+
+##2.2 Rename the column names
+
+We can check the colunm names using *names(data)*
+
+```{r}
+names(reduce.all)
+```
+
+we can also use *names(data)* to change the column names
+
+```{r}
+names(reduce.all)<-c("Year","Month","Day","Hour","Minute","Second",
+                     "HYY_EDDY233.GPP","HYY_EDDY233.ET_gapf","HYY_META.T168")
+```
+
+But usually we only want to change few column names:
+
+```{r}
+names(reduce.all)[8]<-'ET'
+```
+
+```{r}
+names(reduce.all)[c(7,9)]<-c('GPP','T168')
+```
+
+check the updated column names
+
+```{r}
+
+```
+
+##2.3 Subsetting
+
+###Method 1
+
+Often we download much more data than we need. Subsetting using the *subset* function
+is a useway to restrict our datasets to the bits we are actually interested in.
+
+*subset* accepts column names as a second argument. You can use subset to 
+extract data for the month of September from *reduce.all* like this:
+
+```{r}
+reduce.all.sep <- subset(reduce.all, Month==9)
+```
+
+Can you create a new dataframe containing data measured at midday (when hour is between 10 and 15 o'clock) only? 
+
+Name this dataframe *reduce.all.midday*
+
+```{r}
+
+```
+
+Use *head* to check the dates are correct:
+
+```{r}
+
+```
+
+###Method 2.
+
+We can also subset the data inside the dataframe. 
+
+*data[row.index,column.index]*
+
+*Example 1*, we want to select first 7 rows
+
+```{r}
+exam1<-reduce.all[c(1:7),]
+exam1
+```
+
+*Example 2*, we want to select data *reduce.all* when row numbers are 2, 50, and 100:102 and keep first 7 columns
+
+```{r}
+exam2<-reduce.all[c(2,50,100:102),1:7]
+exam2
+```
+
+we can also select data by specific conditions. 
+
+*Example 3*, We want to select the rows when the Hour is between 10 and 15 o'clock (midday data) and keep all the columns. 
+
+```{r}
+reduce.all.midday<-reduce.all[reduce.all$Hour>10&reduce.all$Hour<15,]
+head(reduce.all.midday)
+```
+
+##2.3 reordering
+
+Did you notice something odd? The days are not in ascending order. We can sort this out using *order()* function
+
+```{r}
+reduce.all.midday <- 
+  reduce.all.midday[order(reduce.all.midday$Year,reduce.all.midday$Month,reduce.all.midday$Day), ]
+```
+
+Let's check if this has worked out as expected:
+
+```{r}
+
+```
+
+Now we have a single dataframe with data at our desired midday time-step we 
+can start with our visualisations.
+
+#3. Plotting using basic plot() function in r
+
+##3.1 Line plot
+
+The simplest plot of them all is the dot (or line) plot. The *plot* command is your friend here!
+
+Let's see what our GPP data looks like:
+
+```{r}
+plot(reduce.all.midday$GPP)
+```
+
+##3.2 Scatter plot
+
+We can also use *plot* to plot the relationship between variables by
+making scatter plots. Use the **~** operator to achieve this
+e.g. *plot(A~B,data=data.AB)*, where *A* and *B* are our
+variables and *data.AB* is our dataframe that contains our variables.
+
+Try to make a scatter plot between GPP and ET for our midday data:
+
+```{r}
+plot(GPP~ET,data = reduce.all.midday)
+```
+
+##3.3 histogram
+
+Checking the distribution of your data is usually a very good idea! 
+**hist** is used to draw histograms. How is our midday GPP distributed?
+
+```{r}
+hist(reduce.all.midday$GPP)
+```
+
+##3.4 Panels
+
+Subplots (multiple plots in the same window) in R are achieved with
+the panels or *par* command. Specify the number of rows and
+columns as a two element vector and pass it using the *mfrow* key word
+as an argument to *par* e.g. par(mfrow =c(num.row,num.col)), then use
+repeated calls to *plot* in the usual way.
+
+Can you complete the box below to draw ET and GPP in the same window
+but as separate subplots?
+
+```{r}
+# first swap num.row and num.col for integers *par(mfrow =c(num.row,num.col))*
+# then call plot() for each plot instance
+par(mfrow=c(2,1))
+plot(reduce.all.midday$GPP)
+plot(reduce.all.midday$T168)
+```
+
+#3. Plotting using ggplot() function in ggplot2 packages
+
+ggplot(data,aes(x=A,y=B))+
+  geom_point()+
+  geom_line()
+  
+
+Let's plot the scatter plot of GPP vs. ET. We can also assign the plot to a variable name, and later using ggsave() to save your graph. 
+
+```{r}
+library(ggplot2)
+p<-
+  ggplot(reduce.all.midday,aes(x=ET,y=GPP))+
+    geom_point()
+p
+```
+save your graph
+
+```{r}
+ggsave(p,filename = '../data/GPP_ET.png',dpi = 200,width=5,height=5)
+```
+
+Now let's add a regression line to the scatter plot and name the plot as *p2*
+
+```{r}
+p2<-p+geom_smooth(method = 'lm')
+```
+
+Can you print the figure p2?
+
+```{r}
+
+```
+
+Can you save the figure p2 into local folder?
+
+```{r}
+
+```
+
